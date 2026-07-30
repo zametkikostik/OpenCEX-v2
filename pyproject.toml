@@ -1,22 +1,18 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
-
 [project]
 name = "opencex-rpc"
-version = "0.10.0"
-description = "OpenCEX infrastructure stack"
+version = "0.11.0"
 requires-python = ">=3.10"
 license = { text = "Proprietary" }
 dependencies = ["web3>=6.0.0,<8", "requests>=2.28.0", "eth-account>=0.8.0"]
-
 [project.optional-dependencies]
 django = ["Django>=3.2", "djangorestframework>=3.12"]
 celery = ["celery>=5.2"]
 dev = ["pytest>=7.0"]
-
+metrics = ["prometheus_client>=0.17"]
 [tool.setuptools.packages.find]
-include = ["opencex_rpc*", "opencex_liquidity*", "opencex_swap_api*", "opencex_kyc*", "opencex_wallet*", "opencex_django*", "opencex_secrets*"]
-
+include = ["opencex_rpc*", "opencex_liquidity*", "opencex_swap_api*", "opencex_kyc*", "opencex_wallet*", "opencex_django*", "opencex_secrets*", "opencex_metrics*", "opencex_settlement*", "opencex_aa*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
