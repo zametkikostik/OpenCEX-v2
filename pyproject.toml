@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "opencex-rpc"
-version = "0.6.0"
-description = "OpenCEX: RPC + 0x + Swap + ZK-KYC + Hybrid Wallet + Django/Celery"
+version = "0.7.0"
+description = "OpenCEX: RPC + 0x + Swap + ZK-KYC + Wallet + Django/Celery + Frontend"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Proprietary" }
