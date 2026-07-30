@@ -1,11 +1,18 @@
 # OpenCEX-v2
 
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: Proprietary](https://img.shields.io/badge/license-Proprietary-red.svg)](./LICENSE)
+[![Version](https://img.shields.io/badge/version-0.14.0-green.svg)](./STATUS.md)
+[![Chains](https://img.shields.io/badge/chains-ETH%20%7C%20BNB%20%7C%20Polygon%20%7C%20Arbitrum%20%7C%20Base-informational.svg)](#)
+[![Docs RU](https://img.shields.io/badge/docs-Русский-blue.svg)](./README.ru.md)
+
 **Modern infrastructure layer for the OpenCEX crypto exchange engine.**
 
 Hybrid custody · multi-provider RPC · 0x liquidity · ZK-KYC · non-custodial settlement · ERC-4337 · protocol fees · production ops.
 
 > **License:** Proprietary Commercial — use, copy, or redistribution **without written permission is prohibited**.  
-> Repository: [github.com/zametkikostik/OpenCEX-v2](https://github.com/zametkikostik/OpenCEX-v2)
+> Repository: [github.com/zametkikostik/OpenCEX-v2](https://github.com/zametkikostik/OpenCEX-v2)  
+> **Русская версия:** [README.ru.md](./README.ru.md)
 
 ---
 
@@ -75,8 +82,7 @@ OpenCEX-v2 extends the classic custodial OpenCEX stack with a modular, productio
 git clone https://github.com/zametkikostik/OpenCEX-v2.git
 cd OpenCEX-v2
 pip install -e .
-# optional
-pip install -e ".[django,celery,metrics]"
+pip install -e ".[django,celery,metrics]"   # optional extras
 ```
 
 ### 2. Configure
@@ -84,7 +90,7 @@ pip install -e ".[django,celery,metrics]"
 ```bash
 cp .env.example .env
 chmod 600 .env
-# set ZEROX_API_KEY, RPC_*_URLS, keeper keys (testnet), etc.
+# ZEROX_API_KEY, RPC_*_URLS, keeper keys (testnet), KYC, PROTOCOL_*
 ```
 
 ### 3. Wire into OpenCEX-backend
@@ -104,8 +110,7 @@ python manage.py migrate opencex_django
 celery -A exchange worker -l info
 ```
 
-Full staging procedure: **[ops/STAGING_CHECKLIST.md](ops/STAGING_CHECKLIST.md)**  
-Backend notes: **[integration/OPEN_CEX_BACKEND.md](integration/OPEN_CEX_BACKEND.md)**
+Full staging procedure: **[ops/STAGING_CHECKLIST.md](ops/STAGING_CHECKLIST.md)**
 
 ---
 
@@ -113,36 +118,34 @@ Backend notes: **[integration/OPEN_CEX_BACKEND.md](integration/OPEN_CEX_BACKEND.
 
 ### RPC router (`opencex_rpc`)
 
-Latency-aware routing across dRPC, Grove (Pocket), Ankr, Lava, GetBlock, NOWNodes, 1RPC, and public fallbacks. Circuit breaker and health scoring included.
+Latency-aware routing across **dRPC, Grove (Pocket), Ankr, Lava, GetBlock, NOWNodes, 1RPC**, and public fallbacks. Health scoring and circuit breaker included.
 
-### Liquidity & swap (`opencex_liquidity`, `opencex_swap_api`)
+### Liquidity & swap
 
 - 0x Swap API quotes / calldata  
 - Hybrid routing (internal book + external liquidity)  
-- REST: quote · preview · async execute  
+- REST: quote · preview · async execute (Celery keeper)
 
 ### Keeper
 
-Custodial path: lock balance → optional allowance → sign → **private RPC broadcast** → credit buy / unlock on failure.
+Lock balance → optional allowance → sign → **private RPC broadcast (MEV)** → credit buy / unlock on failure.
 
 ### ZK-KYC (`opencex_kyc`)
 
-Providers: **zkMe** (primary), zkPass, Privado ID. Gates for withdraw and large custodial swaps.
+**zkMe** (primary), zkPass, Privado ID. Gates for withdraw and large custodial swaps.
 
-### Settlement (`opencex_settlement`, `contracts/`)
+### Settlement
 
-- EIP-712 NC orders  
-- `OpenCEXSettlement` / **V2** with **protocol fee** (5–10 bps → issuer treasury)  
-- Foundry tests under `contracts/test/`
+EIP-712 NC orders · `OpenCEXSettlement` / **V2** with **protocol fee** (5–10 bps → issuer treasury) · Foundry tests.
 
 ### Account abstraction (`opencex_aa`)
 
-UserOperation builder, bundler client, paymaster attachment (`PAYMASTER_URL` or verifying paymaster).
+UserOperation builder, bundler client, paymaster (`PAYMASTER_URL` or verifying paymaster).
 
 ### Risk & fees
 
 ```bash
-OPENCEX_CIRCUIT_BREAKER=1          # halt custodial trading
+OPENCEX_CIRCUIT_BREAKER=1
 RISK_MAX_SWAP_USD=10000
 PROTOCOL_FEE_BPS=5
 PROTOCOL_TREASURY=0x...
@@ -152,20 +155,18 @@ PRIVATE_RPC_URL=https://rpc.flashbots.net
 
 ---
 
-## API surface (typical mount)
+## API surface
 
 | Method | Path | Purpose |
 |--------|------|--------|
-| POST | `/api/v1/swap/quote/` | Firm / indicative quote |
-| POST | `/api/v1/swap/execute/` | Queue custodial swap (Celery) |
-| GET | `/api/v1/swap/execution/<id>/` | Execution status |
-| POST | `/api/v1/wallet/swap/nc/` | NC quote for user wallet |
-| POST | `/api/v1/settlement/plan/` | NC settlement plan + calldata |
-| POST | `/api/v1/settlement/aa/userop/` | Build UserOp (+ paymaster) |
-| * | `/api/v1/kyc/` | ZK-KYC session / status |
-| GET | `/metrics/` | Prometheus scrape |
-
-Exact paths depend on your `urls` include layout.
+| POST | `/api/v1/swap/quote/` | Quote |
+| POST | `/api/v1/swap/execute/` | Queue custodial swap |
+| GET | `/api/v1/swap/execution/<id>/` | Status |
+| POST | `/api/v1/wallet/swap/nc/` | NC quote |
+| POST | `/api/v1/settlement/plan/` | Settlement plan |
+| POST | `/api/v1/settlement/aa/userop/` | UserOp (+ paymaster) |
+| * | `/api/v1/kyc/` | ZK-KYC |
+| GET | `/metrics/` | Prometheus |
 
 ---
 
@@ -173,23 +174,18 @@ Exact paths depend on your `urls` include layout.
 
 ```bash
 docker compose -f observability/docker-compose.yml up -d
-# Grafana  http://localhost:3000  (admin / opencex)
-# Prometheus http://localhost:9091
+# Grafana :3000 (admin / opencex) · Prometheus :9091
 ```
 
-- Dashboard: `observability/grafana/opencex-dashboard.json`  
-- Alert rules: `observability/prometheus/alerts.yml`  
-
-Metrics include RPC latency/errors, swap executions, keeper results, KYC events, AA/paymaster.
+Dashboard: `observability/grafana/opencex-dashboard.json`  
+Alerts: `observability/prometheus/alerts.yml`
 
 ---
 
 ## Contracts & testnet
 
 ```bash
-cd contracts
-forge install foundry-rs/forge-std --no-commit
-forge test -vv
+cd contracts && forge install foundry-rs/forge-std --no-commit && forge test -vv
 
 FEE_RECIPIENT=0x... DEPLOYER_PRIVATE_KEY=0x... \
   ./scripts/deploy_settlement_testnet.sh sepolia
@@ -199,17 +195,13 @@ FEE_RECIPIENT=0x... DEPLOYER_PRIVATE_KEY=0x... \
 |----------|------|
 | `OpenCEXSettlement.sol` | NC fill (v1) |
 | `OpenCEXSettlementV2.sol` | Fill + protocol fee |
-| `OpenCEXStaking.sol` | Utility staking vault |
+| `OpenCEXStaking.sol` | Utility staking |
 
 ---
 
-## Business model (summary)
+## Business model
 
-Documented in **[docs/BUSINESS_MODEL.md](docs/BUSINESS_MODEL.md)**:
-
-- White-label / franchise (Pay-to-Deploy + SaaS)  
-- Protocol fee **0.05%–0.1%** on on-chain settlement fills → issuer treasury  
-- Optional staking for fee tiers / collateral (not aggressive yield farming)  
+See **[docs/BUSINESS_MODEL.md](docs/BUSINESS_MODEL.md)**: white-label franchise, **0.05%–0.1%** protocol fee, optional utility staking.
 
 ---
 
@@ -219,9 +211,7 @@ Documented in **[docs/BUSINESS_MODEL.md](docs/BUSINESS_MODEL.md)**:
 |-------|--------|
 | Architecture & modules | Implemented |
 | Staging templates & runbooks | `ops/` |
-| Mainnet with customer funds | **Only after** real staging, contract audit, custody ops, and legal compliance |
-
-Essential ops docs:
+| Mainnet with customer funds | After staging, audit, custody ops, legal |
 
 - [STAGING_CHECKLIST.md](ops/STAGING_CHECKLIST.md)  
 - [CUSTODY_RUNBOOK.md](ops/CUSTODY_RUNBOOK.md)  
@@ -229,10 +219,7 @@ Essential ops docs:
 - [SECURITY_AUDIT_CHECKLIST.md](ops/SECURITY_AUDIT_CHECKLIST.md)  
 
 ```bash
-# offline smoke
 PYTHONPATH=. python scripts/testnet_smoke.py --offline
-
-# against staging API
 python ops/scripts/staging_e2e.py --base-url https://staging/api/v1 --token "$JWT" --quote
 ```
 
@@ -245,23 +232,23 @@ OpenCEX-v2/
 ├── opencex_rpc/          # Multi-provider RPC
 ├── opencex_liquidity/    # 0x + hybrid router
 ├── opencex_swap_api/     # REST + keeper
-├── opencex_django/       # Models, Celery, integration patches
-├── opencex_kyc/          # ZK-KYC providers
+├── opencex_django/       # Models, Celery, patches
+├── opencex_kyc/          # ZK-KYC
 ├── opencex_wallet/       # Hybrid wallet / EIP-712
-├── opencex_settlement/   # NC settlement service
+├── opencex_settlement/   # NC settlement
 ├── opencex_aa/           # ERC-4337 + paymaster
-├── opencex_secrets/      # Vault / KMS / dotenv
+├── opencex_secrets/      # Vault / KMS
 ├── opencex_metrics/      # Prometheus
-├── opencex_mev/          # Private relay helpers
-├── opencex_fees/         # Protocol fee + reconciliation
+├── opencex_mev/          # Private relays
+├── opencex_fees/         # Protocol fee
 ├── opencex_risk/         # Circuit breaker + limits
-├── contracts/            # Solidity + Foundry tests
-├── observability/        # Prometheus, Grafana, compose
+├── contracts/            # Solidity + Foundry
+├── observability/        # Prometheus, Grafana
 ├── ops/                  # Runbooks, staging, e2e
-├── scripts/              # Smoke & deploy helpers
-├── docs/                 # Business model & design notes
+├── scripts/              # Smoke & deploy
+├── docs/                 # Business model
 ├── frontend/             # NC swap UI samples
-└── tests/                # Pytest
+└── tests/
 ```
 
 ---
@@ -271,22 +258,19 @@ OpenCEX-v2/
 ```bash
 pip install -e ".[dev,metrics]"
 pytest tests/ -v
-PYTHONPATH=. python scripts/testnet_smoke.py --chain sepolia --offline
 ```
 
-Python **≥ 3.10**. Optional: Django 3.2+, Celery 5+, `prometheus_client`, Foundry for contracts.
+Python **≥ 3.10**. Optional: Django 3.2+, Celery 5+, `prometheus_client`, Foundry.
 
 ---
 
 ## Security
 
 - No production private keys in git or images  
-- Prefer Vault AppRole or KMS-wrapped keeper keys  
-- Enable `MEV_PROTECT` and private RPC for custodial broadcasts  
-- Cap protocol fee on-chain (`MAX_FEE_BPS`)  
-- External audit of settlement/staking contracts before mainnet  
-
-See [ops/SECURITY_AUDIT_CHECKLIST.md](ops/SECURITY_AUDIT_CHECKLIST.md) and [ops/CUSTODY_RUNBOOK.md](ops/CUSTODY_RUNBOOK.md).
+- Vault AppRole or KMS-wrapped keeper keys  
+- `MEV_PROTECT` + private RPC for custodial broadcasts  
+- On-chain fee cap (`MAX_FEE_BPS`)  
+- External audit of settlement/staking before mainnet  
 
 ---
 
@@ -302,6 +286,6 @@ You may not use, copy, modify, merge, publish, distribute, sublicense, and/or se
 
 ## Status
 
-Current version and changelog pointers: **[STATUS.md](STATUS.md)**.
+See **[STATUS.md](STATUS.md)**.
 
-Built as a professional drop-in modernization layer for OpenCEX — not a turnkey licensed exchange. Production deployment remains the operator’s responsibility (infrastructure, compliance, audits, and key custody).
+Built as a professional drop-in modernization layer for OpenCEX — not a turnkey licensed exchange. Production deployment is the operator’s responsibility (infrastructure, compliance, audits, key custody).
