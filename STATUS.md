@@ -1,9 +1,5 @@
-# v0.13.0
+# v0.14.0 Production readiness pack
 
-MEV + protocol fee + staking contracts + Prometheus/Grafana docker-compose + testnet deploy script.
-See docs/BUSINESS_MODEL.md
+Risk circuit breaker + limits, fee reconciliation, staging/custody/incident/security/load ops docs, staging_e2e.py
 
-```bash
-docker compose -f observability/docker-compose.yml up -d
-FEE_RECIPIENT=0x.. DEPLOYER_PRIVATE_KEY=0x.. ./scripts/deploy_settlement_testnet.sh sepolia
-```
+Human still required: real staging deploy, contract audit, legal, mainnet limits.
