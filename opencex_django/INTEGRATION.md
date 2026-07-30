@@ -1,29 +1,20 @@
-# Celery + Django models + NC Swap UI
-
-## Install
+# Wire into OpenCEX-backend
 
 ```python
-INSTALLED_APPS += ["opencex_django"]
-CELERY_IMPORTS = ("opencex_django.tasks",)
+from opencex_django.settings_patch import apply_opencex_v2
+apply_opencex_v2(globals())
+
+from opencex_django.urls_patch import opencex_v2_urlpatterns
+urlpatterns += opencex_v2_urlpatterns
 ```
 
 ```bash
 python manage.py migrate opencex_django
-celery -A project worker -l info
+celery -A exchange worker -l info
 ```
 
-## Models
+Balance: OPENCEX_BALANCE_HOOKS -> BalanceManager set_hold / free_hold / increase_amount
+KYC: KYC_SWAP_THRESHOLD_USD, KYCRequiredForWithdraw
+Limits: OPENCEX_SWAP_LIMITS
 
-UserKYC, WalletSessionRecord, SignedOrderRecord, SwapExecution
-
-## Task
-
-`opencex.execute_swap` via `enqueue_swap(user, plan, sell, buy)`
-
-## NC UI
-
-`static/opencex/nc_swap.html` — MetaMask + 0x quote + user-signed tx
-
-## License
-
-Proprietary Commercial.
+Full: integration/OPEN_CEX_BACKEND.md
