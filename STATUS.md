@@ -1,8 +1,9 @@
-# OpenCEX-v2 v0.12.0
+# v0.13.0
 
-- Grafana: observability/grafana/opencex-dashboard.json
-- Foundry: contracts/test/OpenCEXSettlement.t.sol (forge test)
-- Paymaster: opencex_aa/paymaster.py + AA userop endpoint attaches paymasterAndData
+MEV + protocol fee + staking contracts + Prometheus/Grafana docker-compose + testnet deploy script.
+See docs/BUSINESS_MODEL.md
 
-PAYMASTER_POLICY=sponsor_settlement|sponsor_all|none
-PAYMASTER_URL / PAYMASTER_ADDRESS / PAYMASTER_SIGNER_KEY
+```bash
+docker compose -f observability/docker-compose.yml up -d
+FEE_RECIPIENT=0x.. DEPLOYER_PRIVATE_KEY=0x.. ./scripts/deploy_settlement_testnet.sh sepolia
+```

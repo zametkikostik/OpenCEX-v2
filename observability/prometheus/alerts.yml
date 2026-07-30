@@ -1,0 +1,28 @@
+groups:
+  - name: opencex
+    rules:
+      - alert: OpenCEXRPCHighErrorRate
+        expr: sum(rate(opencex_rpc_errors_total[5m])) > 1
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "RPC error rate elevated" }
+      - alert: OpenCEXProviderDown
+        expr: opencex_rpc_provider_healthy == 0
+        for: 3m
+        labels: { severity: critical }
+        annotations: { summary: "RPC provider unhealthy {{ $labels.provider }}" }
+      - alert: OpenCEXKeeperLockFailures
+        expr: sum(rate(opencex_keeper_lock_fail_total[15m])) > 0.1
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "Keeper lock failures" }
+      - alert: OpenCEXSwapFailureSpike
+        expr: sum(rate(opencex_swap_executions_total{status!="success"}[10m])) > 0.2
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "Swap failure rate high" }
+      - alert: OpenCEXSwapLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(opencex_swap_execution_seconds_bucket[15m])) by (le)) > 120
+        for: 15m
+        labels: { severity: warning }
+        annotations: { summary: "p95 swap > 120s" }
