@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "opencex-rpc"
-version = "0.2.0"
-description = "OpenCEX infrastructure: multi-provider RPC router + 0x liquidity layer"
+version = "0.3.0"
+description = "OpenCEX infrastructure: multi-provider RPC router + 0x liquidity layer + Swap REST API"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Proprietary" }
@@ -20,9 +20,13 @@ dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
 ]
+django = [
+    "Django>=3.2",
+    "djangorestframework>=3.12",
+]
 
 [tool.setuptools.packages.find]
-include = ["opencex_rpc*", "opencex_liquidity*"]
+include = ["opencex_rpc*", "opencex_liquidity*", "opencex_swap_api*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
