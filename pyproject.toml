@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "opencex-rpc"
-version = "0.1.0"
-description = "Production multi-provider RPC router for OpenCEX (dRPC, Ankr, Lava, Grove, GetBlock, NOWNodes, 1RPC)"
+version = "0.2.0"
+description = "OpenCEX infrastructure: multi-provider RPC router + 0x liquidity layer"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Proprietary" }
@@ -22,7 +22,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["opencex_rpc*"]
+include = ["opencex_rpc*", "opencex_liquidity*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
