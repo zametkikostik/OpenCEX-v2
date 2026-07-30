@@ -1,4 +1,4 @@
-"""OPENCEX_BALANCE_HOOKS bound to OpenCEX BalanceManager (set_hold / free_hold / increase_amount)."""
+"""OPENCEX_BALANCE_HOOKS bound to OpenCEX BalanceManager."""
 
 from __future__ import annotations
 
@@ -16,13 +16,13 @@ TOKEN_DECIMALS = {
 
 
 def wei_to_decimal(amount_wei, symbol: str) -> Decimal:
-    decimals = TOKEN_DECIMALS.get(symbol.upper(), 18)
+    decimals = TOKEN_DECIMALS.get(str(symbol).upper(), 18)
     return Decimal(str(amount_wei)) / (Decimal(10) ** decimals)
 
 
 def _resolve_currency(symbol: str):
     from core.currency import Currency
-    return Currency.get(symbol.upper())
+    return Currency.get(str(symbol).upper())
 
 
 def lock_balance(user_id, sell_symbol, sell_amount_wei, chain_id=1) -> bool:
@@ -58,8 +58,7 @@ def unlock_balance(user_id, sell_symbol, sell_amount_wei, chain_id=1) -> None:
         uid = int(user_id)
         bal = Balance.objects.filter(user_id=uid, currency=currency).first()
         current = bal.amount_in_orders if bal else Decimal(0)
-        new_in = max(current - amount, Decimal(0))
-        BalanceManager.free_hold(uid, currency, amount, new_in)
+        BalanceManager.free_hold(uid, currency, amount, max(current - amount, Decimal(0)))
         log.info("Unlocked %s %s user=%s", amount, sell_symbol, user_id)
     except Exception as exc:
         log.exception("unlock_balance failed: %s", exc)
@@ -86,7 +85,7 @@ def credit_balance(user_id, buy_symbol, buy_amount_wei, chain_id=1,
         log.info("Credited %s %s user=%s", buy_amount, buy_symbol, user_id)
         return True
     except Exception as exc:
-        log.exception("credit_balance failed: %s", exp)
+        log.exception("credit_balance failed: %s", exc)
         return False
 
 
