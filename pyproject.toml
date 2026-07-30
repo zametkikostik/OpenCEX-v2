@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opencex-rpc"
+version = "0.1.0"
+description = "Production multi-provider RPC router for OpenCEX (dRPC, Ankr, Lava, Grove, GetBlock, NOWNodes, 1RPC)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+authors = [{ name = "zametkikostik" }]
+dependencies = [
+    "web3>=6.0.0,<8",
+    "requests>=2.28.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+]
+
+[tool.setuptools.packages.find]
+include = ["opencex_rpc*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
