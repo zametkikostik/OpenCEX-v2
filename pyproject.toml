@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "opencex-rpc"
-version = "0.7.0"
-description = "OpenCEX: RPC + 0x + Swap + ZK-KYC + Wallet + Django/Celery + Frontend"
+version = "0.8.0"
+description = "OpenCEX infrastructure stack"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Proprietary" }
@@ -19,6 +19,10 @@ dependencies = [
 [project.optional-dependencies]
 django = ["Django>=3.2", "djangorestframework>=3.12"]
 celery = ["celery>=5.2"]
+dev = ["pytest>=7.0"]
 
 [tool.setuptools.packages.find]
 include = ["opencex_rpc*", "opencex_liquidity*", "opencex_swap_api*", "opencex_kyc*", "opencex_wallet*", "opencex_django*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
