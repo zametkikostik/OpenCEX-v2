@@ -1,0 +1,29 @@
+{
+  "title": "OpenCEX Operations",
+  "uid": "opencex-ops",
+  "tags": ["opencex"],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "time": {"from": "now-6h", "to": "now"},
+  "templating": {"list": [{"name": "datasource", "type": "datasource", "query": "prometheus"}]},
+  "panels": [
+    {"id": 1, "title": "RPC latency p95", "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+     "targets": [{"expr": "histogram_quantile(0.95, sum(rate(opencex_rpc_latency_seconds_bucket[5m])) by (le, chain_id, provider))", "legendFormat": "{{provider}} c{{chain_id}}"}]},
+    {"id": 2, "title": "RPC requests/errors", "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+     "targets": [{"expr": "sum(rate(opencex_rpc_requests_total[5m])) by (status)", "legendFormat": "{{status}}"}, {"expr": "sum(rate(opencex_rpc_errors_total[5m])) by (error_type)", "legendFormat": "err {{error_type}}"}]},
+    {"id": 3, "title": "Provider health", "type": "stat", "gridPos": {"h": 4, "w": 24, "x": 0, "y": 8},
+     "targets": [{"expr": "opencex_rpc_provider_healthy", "legendFormat": "{{provider}} / {{chain_id}}"}]},
+    {"id": 4, "title": "Swap executions", "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+     "targets": [{"expr": "sum(rate(opencex_swap_executions_total[5m])) by (status, chain_id)", "legendFormat": "{{status}} c{{chain_id}}"}]},
+    {"id": 5, "title": "Swap duration p50/p95", "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+     "targets": [{"expr": "histogram_quantile(0.5, sum(rate(opencex_swap_execution_seconds_bucket[5m])) by (le, chain_id))", "legendFormat": "p50"}, {"expr": "histogram_quantile(0.95, sum(rate(opencex_swap_execution_seconds_bucket[5m])) by (le, chain_id))", "legendFormat": "p95"}]},
+    {"id": 6, "title": "Keeper", "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+     "targets": [{"expr": "sum(rate(opencex_keeper_tx_total[5m])) by (result)", "legendFormat": "{{result}}"}, {"expr": "sum(rate(opencex_keeper_lock_fail_total[5m]))", "legendFormat": "lock_fail"}]},
+    {"id": 7, "title": "Quotes", "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+     "targets": [{"expr": "sum(rate(opencex_swap_quotes_total[5m])) by (source, status)", "legendFormat": "{{source}} {{status}}"}]},
+    {"id": 8, "title": "KYC", "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 28},
+     "targets": [{"expr": "sum(rate(opencex_kyc_events_total[5m])) by (provider, status)", "legendFormat": "{{provider}} {{status}}"}]},
+    {"id": 9, "title": "AA / Paymaster", "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 28},
+     "targets": [{"expr": "sum(rate(opencex_aa_userop_total[5m])) by (result) or vector(0)", "legendFormat": "userop {{result}}"}, {"expr": "sum(rate(opencex_aa_paymaster_total[5m])) by (result) or vector(0)", "legendFormat": "pm {{result}}"}]}
+  ]
+}
