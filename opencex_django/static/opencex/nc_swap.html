@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OpenCEX — Non-Custodial Swap</title>
+  <style>
+    :root { --bg:#0b0e11; --card:#12161c; --border:#1e2329; --text:#eaecef; --muted:#848e9c; --accent:#f0b90b; --green:#0ecb81; --red:#f6465d; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); display:flex; align-items:center; justify-content:center; padding:24px; }
+    .card { width:100%; max-width:420px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px; }
+    h1 { font-size:1.25rem; margin:0 0 4px; }
+    .sub { color:var(--muted); font-size:0.85rem; margin-bottom:20px; }
+    label { display:block; font-size:0.75rem; color:var(--muted); margin-bottom:6px; }
+    .row { margin-bottom:14px; }
+    select, input { width:100%; padding:12px 14px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:1rem; }
+    .pair { display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:end; }
+    .arrow { color:var(--muted); padding-bottom:12px; text-align:center; }
+    button { width:100%; padding:14px; border:none; border-radius:10px; font-size:1rem; font-weight:600; cursor:pointer; margin-top:8px; }
+    .btn-primary { background:var(--accent); color:#000; }
+    .btn-primary:disabled { opacity:0.5; cursor:not-allowed; }
+    .btn-secondary { background:var(--border); color:var(--text); }
+    .status { margin-top:16px; padding:12px; border-radius:8px; background:var(--bg); font-size:0.8rem; color:var(--muted); word-break:break-all; min-height:48px; }
+    .status.ok { color:var(--green); border:1px solid var(--green); }
+    .status.err { color:var(--red); border:1px solid var(--red); }
+    .price { font-size:0.9rem; color:var(--muted); margin-top:8px; }
+    .wallet { font-size:0.75rem; color:var(--green); margin-bottom:12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Non-Custodial Swap</h1>
+    <p class="sub">Funds stay in your wallet. Powered by 0x + OpenCEX.</p>
+    <div id="walletLine" class="wallet">Not connected</div>
+    <div class="row"><label>Network</label>
+      <select id="chainId">
+        <option value="1">Ethereum</option><option value="56">BNB Chain</option>
+        <option value="137">Polygon</option><option value="42161">Arbitrum</option><option value="8453">Base</option>
+      </select>
+    </div>
+    <div class="pair">
+      <div class="row"><label>Sell</label><select id="sell"><option>ETH</option><option>USDT</option><option>USDC</option></select></div>
+      <div class="arrow">→</div>
+      <div class="row"><label>Buy</label><select id="buy"><option>USDT</option><option>ETH</option><option>USDC</option></select></div>
+    </div>
+    <div class="row"><label>Amount</label><input id="amount" type="text" value="0.01" /></div>
+    <div class="price" id="priceLine">Price: —</div>
+    <button class="btn-secondary" id="btnConnect" type="button">Connect Wallet</button>
+    <button class="btn-primary" id="btnQuote" type="button" disabled>Get Quote</button>
+    <button class="btn-primary" id="btnSwap" type="button" disabled>Swap</button>
+    <div class="status" id="status">Ready.</div>
+  </div>
+  <script>
+    const API_BASE = window.OPENCEX_API_BASE || "/api/v1";
+    const TOKEN = window.OPENCEX_TOKEN || "";
+    const DECIMALS = { ETH:18, BNB:18, MATIC:18, USDT:6, USDC:6, DAI:18 };
+    let account = null, lastQuote = null;
+    const $ = (id) => document.getElementById(id);
+    function setStatus(msg, kind) { const el=$("status"); el.textContent=msg; el.className="status"+(kind?" "+kind:""); }
+    function headers() { const h={"Content-Type":"application/json"}; if(TOKEN) h["Authorization"]="Bearer "+TOKEN; return h; }
+    function toWei(amountStr, symbol) {
+      const d=DECIMALS[symbol]??18; const [w,f=""]=amountStr.split(".");
+      return BigInt(w+(f+"0".repeat(d)).slice(0,d)).toString();
+    }
+    async function connect() {
+      if(!window.ethereum) return setStatus("Install MetaMask.","err");
+      const accounts=await window.ethereum.request({method:"eth_requestAccounts"});
+      account=accounts[0];
+      $("walletLine").textContent="Connected: "+account.slice(0,6)+"…"+account.slice(-4);
+      $("btnQuote").disabled=false; setStatus("Wallet connected.","ok");
+      try { await fetch(API_BASE+"/wallet/session/",{method:"POST",headers:headers(),body:JSON.stringify({mode:"non_custodial",address:account,chain_id:Number($("chainId").value)})}); } catch(_){}
+    }
+    async function getQuote() {
+      if(!account) return setStatus("Connect wallet first.","err");
+      const chainId=Number($("chainId").value), sell=$("sell").value, buy=$("buy").value, amount=$("amount").value.trim();
+      if(!amount||Number(amount)<=0) return setStatus("Invalid amount.","err");
+      const sellAmount=toWei(amount,sell); setStatus("Fetching quote…");
+      try {
+        let res=await fetch(API_BASE+"/wallet/swap/nc/",{method:"POST",headers:headers(),body:JSON.stringify({chain_id:chainId,sell_token:sell,buy_token:buy,sell_amount:sellAmount,taker:account})});
+        if(!res.ok) res=await fetch(API_BASE+"/swap/quote/",{method:"POST",headers:headers(),body:JSON.stringify({chain_id:chainId,sell,buy,amount:sellAmount,taker:account})});
+        const data=await res.json(); if(!res.ok) throw new Error(data.error||JSON.stringify(data));
+        lastQuote=data; $("priceLine").textContent="You receive ≈ "+(data.buy_amount||"?")+" (raw)";
+        $("btnSwap").disabled=false;
+        setStatus(data.needs_allowance?"Approval required before swap.":"Quote ready. Click Swap.","ok");
+      } catch(e) { lastQuote=null; $("btnSwap").disabled=true; setStatus("Quote failed: "+e.message,"err"); }
+    }
+    async function doSwap() {
+      if(!lastQuote||!account) return;
+      const tx=lastQuote.transaction; if(!tx||!tx.to||!tx.data) return setStatus("No transaction.","err");
+      const chainId=Number($("chainId").value);
+      try { await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x"+chainId.toString(16)}]}); } catch(e) { if(e.code===4902) return setStatus("Add network to wallet.","err"); }
+      if(lastQuote.needs_allowance&&lastQuote.allowance_spender) {
+        setStatus("Approve in wallet…");
+        const spender=lastQuote.allowance_spender, token=lastQuote.sell_token;
+        const max="ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+        const data="0x095ea7b3"+spender.slice(2).toLowerCase().padStart(64,"0")+max;
+        try { await window.ethereum.request({method:"eth_sendTransaction",params:[{from:account,to:token,data}]}); }
+        catch(e) { return setStatus("Approval rejected: "+e.message,"err"); }
+      }
+      setStatus("Confirm swap…");
+      try {
+        const params={from:account,to:tx.to,data:tx.data,value:tx.value?"0x"+BigInt(tx.value).toString(16):"0x0"};
+        if(tx.gas) params.gas="0x"+Number(tx.gas).toString(16);
+        const hash=await window.ethereum.request({method:"eth_sendTransaction",params:[params]});
+        setStatus("Swap submitted: "+hash,"ok");
+      } catch(e) { setStatus("Swap rejected: "+e.message,"err"); }
+    }
+    $("btnConnect").onclick=()=>connect().catch(e=>setStatus(e.message,"err"));
+    $("btnQuote").onclick=()=>getQuote();
+    $("btnSwap").onclick=()=>doSwap();
+  </script>
+</body>
+</html>
