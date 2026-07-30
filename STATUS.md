@@ -1,13 +1,16 @@
-# OpenCEX-v2 status v0.10.0
+# OpenCEX-v2 v0.11.0
 
-## Done
-- HSM/Vault secrets (env, dotenv, Vault, AWS SM, KMS)
-- Keeper key resolve + patch_keeper
-- .env.example layout
-- testnet smoke: scripts/testnet_smoke.py
+## Prometheus
+- opencex_metrics (RPC, swap, keeper, KYC)
+- GET /metrics/ or OPENCEX_METRICS_PORT=9090
+- pip install prometheus_client
 
-## Smoke
-```bash
-PYTHONPATH=. python scripts/testnet_smoke.py --chain sepolia
-PYTHONPATH=. python scripts/testnet_smoke.py --offline  # no network
-```
+## NC Settlement
+- EIP-712 NCOrder + OpenCEXSettlement.sol
+- POST /api/v1/settlement/plan/
+- SETTLEMENT_CONTRACT_<chain_id>
+
+## ERC-4337
+- UserOpBuilder + BundlerClient
+- POST /api/v1/settlement/aa/userop/
+- BUNDLER_URL, ENTRYPOINT_<chain>
